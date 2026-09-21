@@ -17,7 +17,7 @@
         </p>
         <div class="hero-actions">
             <a href="{{ url_for('register') }}" class="hero-btn hero-btn-primary">Create free account</a>
-            <a href="#" class="hero-btn hero-btn-secondary">See how it works</a>
+            <a href="#" id="how-it-works-btn" class="hero-btn hero-btn-secondary">See how it works</a>
         </div>
     </div>
     <div class="hero-visual">
@@ -96,4 +96,53 @@
     </div>
 </section>
 
+<div class="modal-overlay" id="how-it-works-overlay">
+    <div class="modal-box">
+        <button type="button" class="modal-close" id="how-it-works-close" aria-label="Close">&times;</button>
+        <div class="modal-video-wrapper">
+            <iframe
+                id="how-it-works-iframe"
+                src=""
+                title="Spendly — how it works"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var YOUTUBE_EMBED_URL = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+
+        var openBtn = document.getElementById("how-it-works-btn");
+        var closeBtn = document.getElementById("how-it-works-close");
+        var overlay = document.getElementById("how-it-works-overlay");
+        var iframe = document.getElementById("how-it-works-iframe");
+
+        function openModal(event) {
+            event.preventDefault();
+            iframe.src = YOUTUBE_EMBED_URL + "?autoplay=1";
+            overlay.classList.add("is-open");
+        }
+
+        function closeModal() {
+            overlay.classList.remove("is-open");
+            iframe.src = "";
+        }
+
+        openBtn.addEventListener("click", openModal);
+        closeBtn.addEventListener("click", closeModal);
+
+        overlay.addEventListener("click", function (event) {
+            if (event.target === overlay) {
+                closeModal();
+            }
+        });
+    })();
+</script>
 {% endblock %}

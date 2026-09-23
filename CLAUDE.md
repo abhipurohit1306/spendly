@@ -13,7 +13,8 @@ spendly/
 ├── static/
 │   ├── css/
 │   │   ├── style.css       # Global styles
-│   │   └── landing.css     # Landing-page-only styles
+│   │   ├── landing.css     # Landing-page-only styles
+│   │   └── profile.css     # Profile-page-only styles
 │   └── js/
 │       └── main.js         # Vanilla JS only
 └── requirements.txt
@@ -63,10 +64,10 @@ pytest -s
 Implemented vs stub routes
 Route	Status
 GET /	Implemented — renders landing.html
-GET/POST /register	Implemented — creates user, sets session["user_id"]
-GET/POST /login	Implemented — verifies password, sets session["user_id"]
+GET/POST /register	Implemented — creates user, sets session["user_id"] and session["user_name"]
+GET/POST /login	Implemented — verifies password, sets session["user_id"] and session["user_name"]
 GET /logout	Implemented — clears session, redirects to /
-GET /profile	Stub — Step 4
+GET /profile	Implemented — Step 4: renders profile.html with hardcoded data (DB wiring in Step 5)
 GET /expenses/add	Stub — Step 7
 GET /expenses/<id>/edit	Stub — Step 8
 GET /expenses/<id>/delete	Stub — Step 9

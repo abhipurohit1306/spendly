@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="profile">
+    <div class="profile-inner">
+
+        <header class="profile-header">
+            <div>
+                <p class="profile-eyebrow">Account</p>
+                <h1 class="profile-title">Your profile</h1>
+            </div>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary profile-add">
+                <svg class="profile-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="M5 12h14"/><path d="M12 5v14"/>
+                </svg>
+                Add expense
+            </a>
+        </header>
+
+        <div class="profile-top">
+            <article class="profile-card profile-user" aria-label="Account details">
+                <div class="profile-avatar" aria-hidden="true">{{ user.name|initials }}</div>
+                <h2 class="profile-user-name">{{ user.name }}</h2>
+                <p class="profile-user-email">{{ user.email }}</p>
+                <dl class="profile-user-meta">
+                    <dt>Member since</dt>
+                    <dd>{{ user.member_since|date_fmt('%B %Y') }}</dd>
+                </dl>
+            </article>
+
+            <div class="profile-stats">
+                <div class="profile-card profile-stat">
+                    <svg class="profile-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+                    </svg>
+                    <span class="profile-stat-label">Total spent</span>
+                    <strong class="profile-stat-value profile-num">₹{{ '%.2f'|format(summary.total_spent) }}</strong>
+                    <span class="profile-stat-sub">Across all categories</span>
+                </div>
+
+                <div class="profile-card profile-stat">
+                    <svg class="profile-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+                        <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+                        <path d="M12 17.5v-11"/>
+                    </svg>
+                    <span class="profile-stat-label">Transactions</span>
+                    <strong class="profile-stat-value profile-num">{{ summary.transaction_count }}</strong>
+                    <span class="profile-stat-sub">Recorded expenses</span>
+                </div>
+
+                <div class="profile-card profile-stat">
+                    <svg class="profile-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>
+                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
+                    </svg>
+                    <span class="profile-stat-label">Top category</span>
+                    <strong class="profile-stat-value">{{ summary.top_category or '—' }}</strong>
+                    <span class="profile-stat-sub">
+                        {% if summary.categories %}
+                        ₹{{ '%.2f'|format(summary.categories[0].total) }} · {{ summary.categories[0].percent }}% of spend
+                        {% else %}
+                        No spending yet
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-main">
+            <section class="profile-card profile-history" aria-labelledby="history-title">
+                <h2 id="history-title" class="profile-section-title">Transaction history</h2>
+                {% if expenses %}
+                <div class="profile-table-wrap">
+                    <table class="profile-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Category</th>
+                                <th scope="col" class="profile-num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr class="profile-row">
+                                <td class="profile-date"><time datetime="{{ expense.date }}">{{ expense.date|date_fmt }}</time></td>
+                                <td>{{ expense.description }}</td>
+                                <td><span class="profile-badge profile-badge--{{ expense.category|lower }}">{{ expense.category }}</span></td>
+                                <td class="profile-num">₹{{ '%.2f'|format(expense.amount) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="profile-empty">No expenses yet. <a href="{{ url_for('add_expense') }}">Add your first one</a>.</p>
+                {% endif %}
+            </section>
+
+            <section class="profile-card profile-breakdown" aria-labelledby="breakdown-title">
+                <h2 id="breakdown-title" class="profile-section-title">By category</h2>
+                {% if summary.categories %}
+                <ul class="profile-breakdown-list">
+                    {% for item in summary.categories %}
+                    <li class="profile-breakdown-row">
+                        <div class="profile-breakdown-head">
+                            <span class="profile-badge profile-badge--{{ item.category|lower }}">{{ item.category }}</span>
+                            <span class="profile-breakdown-amount profile-num">
+                                ₹{{ '%.2f'|format(item.total) }}
+                                <span class="profile-breakdown-pct">{{ item.percent }}%</span>
+                            </span>
+                        </div>
+                        <progress class="profile-bar profile-bar--{{ item.category|lower }}" value="{{ item.percent }}" max="100" aria-label="{{ item.category }}: {{ item.percent }}% of spending">{{ item.percent }}%</progress>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="profile-empty">Nothing to break down yet.</p>
+                {% endif %}
+            </section>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

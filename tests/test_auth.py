@@ -93,11 +93,52 @@ def test_navbar_reflects_session(client):
     assert b"Sign out" not in landing
 
     login(client, DEMO_EMAIL, DEMO_PASSWORD)
-    landing = client.get("/").data
+    landing = client.get("/", follow_redirects=True).data
     assert b"Sign out" in landing
+    assert b"Demo User" in landing
     assert b"Get started" not in landing
 
     client.get("/logout")
     landing = client.get("/").data
     assert b"Sign in" in landing
     assert b"Sign out" not in landing
+
+
+def test_login_sets_user_name_in_session(client):
+    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+    with client.session_transaction() as sess:
+        assert sess["user_name"] == "Demo User"
+
+
+def test_register_sets_user_name_in_session(client):
+    client.post(
+        "/register",
+        data={"name": "Asha", "email": "asha@example.com", "password": "secret123"},
+    )
+    with client.session_transaction() as sess:
+        assert sess["user_name"] == "Asha"
+
+
+def test_logout_clears_user_name(client):
+    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+    client.get("/logout")
+    with client.session_transaction() as sess:
+        assert "user_name" not in sess
+
+
+def test_landing_redirects_to_profile_when_logged_in(client):
+    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+    response = client.get("/")
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/profile")
+
+
+def test_register_page_redirects_when_logged_in(client):
+    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+    response = client.get("/register")
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/profile")
+
+
+def test_landing_renders_when_logged_out(client):
+    assert client.get("/").status_code == 200

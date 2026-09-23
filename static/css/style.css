@@ -19,6 +19,14 @@
     --border: #e4e1da;
     --border-soft: #eeebe4;
 
+    --cat-food: var(--accent-2);
+    --cat-health: var(--accent);
+    --cat-transport: #4a7fd6;
+    --cat-bills: #7a6fd6;
+    --cat-entertainment: #b5487a;
+    --cat-shopping: #2a8c8c;
+    --cat-other: var(--ink-muted);
+
     --font-display: 'DM Serif Display', Georgia, serif;
     --font-body: 'DM Sans', system-ui, sans-serif;
 
@@ -102,6 +110,11 @@ a { color: inherit; text-decoration: none; }
 
 .nav-links a { color: var(--ink-muted); transition: color 0.2s; }
 .nav-links a:hover { color: var(--ink); }
+
+.nav-user {
+    color: var(--ink);
+    font-weight: 600;
+}
 
 .nav-cta {
     background: var(--ink) !important;
@@ -681,5 +694,11 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 600px) {
     .nav-links a:not(.nav-cta) { display: none; }
+    .nav-user {
+        max-width: 12ch;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
     .hero { padding: 3rem 1rem 2rem; }
 }

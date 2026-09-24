@@ -3,83 +3,16 @@ from datetime import datetime
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
-from database.db import create_user, get_db, get_user_by_email, init_db, seed_db
+from database.db import create_user, get_user_by_email, init_db, seed_db
+from database.queries import (
+    get_category_breakdown,
+    get_recent_transactions,
+    get_summary_stats,
+    get_user_by_id,
+)
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
-
-
-# ------------------------------------------------------------------ #
-# Hardcoded profile data — Step 4, replaced by DB queries in Step 5   #
-# ------------------------------------------------------------------ #
-
-PROFILE_USER = {
-    "name": "Demo User",
-    "email": "demo@spendly.com",
-    "member_since": "2026-09-01",
-}
-
-PROFILE_EXPENSES = [
-    {
-        "id": 8, "amount": 20.00, "category": "Other",
-        "date": "2026-09-20", "description": "Birthday gift",
-    },
-    {
-        "id": 7, "amount": 60.20, "category": "Shopping",
-        "date": "2026-09-17", "description": "New running shoes",
-    },
-    {
-        "id": 6, "amount": 15.00, "category": "Entertainment",
-        "date": "2026-09-14", "description": "Movie ticket",
-    },
-    {
-        "id": 5, "amount": 32.75, "category": "Food",
-        "date": "2026-09-11", "description": "Groceries",
-    },
-    {
-        "id": 4, "amount": 25.00, "category": "Health",
-        "date": "2026-09-09", "description": "Pharmacy - vitamins",
-    },
-    {
-        "id": 3, "amount": 89.99, "category": "Bills",
-        "date": "2026-09-05", "description": "Electricity bill",
-    },
-    {
-        "id": 2, "amount": 45.00, "category": "Transport",
-        "date": "2026-09-04", "description": "Monthly metro pass",
-    },
-    {
-        "id": 1, "amount": 12.50, "category": "Food",
-        "date": "2026-09-02", "description": "Coffee and bagel",
-    },
-]
-
-
-def build_profile_summary(expenses):
-    """Derive total, count, top category and per-category breakdown
-    (sorted by total, largest first) from a list of expense dicts."""
-    totals = {}
-    for expense in expenses:
-        category = expense["category"]
-        totals[category] = totals.get(category, 0) + expense["amount"]
-
-    total_spent = sum(totals.values())
-    categories = [
-        {
-            "category": category,
-            "total": total,
-            "percent": round(total / total_spent * 100) if total_spent else 0,
-        }
-        for category, total in sorted(
-            totals.items(), key=lambda item: item[1], reverse=True
-        )
-    ]
-    return {
-        "total_spent": total_spent,
-        "transaction_count": len(expenses),
-        "top_category": categories[0]["category"] if categories else None,
-        "categories": categories,
-    }
 
 
 # ------------------------------------------------------------------ #
@@ -188,13 +121,33 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    if not session.get("user_id"):
+    user_id = session.get("user_id")
+    if not user_id:
         return redirect(url_for("login"))
+
+    user = get_user_by_id(user_id)
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    # --- Transaction history ---
+    expenses = get_recent_transactions(user_id)
+    # --- end transaction history ---
+
+    # --- Summary stats ---
+    summary = get_summary_stats(user_id)
+    # --- end summary stats ---
+
+    # --- Category breakdown ---
+    categories = get_category_breakdown(user_id)
+    # --- end category breakdown ---
+
     return render_template(
         "profile.html",
-        user=PROFILE_USER,
-        expenses=PROFILE_EXPENSES,
-        summary=build_profile_summary(PROFILE_EXPENSES),
+        user=user,
+        expenses=expenses,
+        summary=summary,
+        categories=categories,
     )
 
 

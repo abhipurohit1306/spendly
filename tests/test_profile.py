@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from app import build_profile_summary, date_fmt, initials
+from app import date_fmt, initials
+from database.queries import get_user_by_id
 
 DEMO_EMAIL = "demo@spendly.com"
 DEMO_PASSWORD = "demo123"
@@ -36,7 +37,7 @@ def test_profile_shows_user_card(profile_page):
     assert b"demo@spendly.com" in data
     assert b">DU<" in data
     assert b"Member since" in data
-    assert b"September 2026" in data
+    assert get_user_by_id(1)["member_since"].encode() in data
 
 
 def test_profile_shows_summary_stats(profile_page):
@@ -85,30 +86,6 @@ def test_profile_links_add_expense_and_stylesheet(profile_page):
     data = profile_page.data
     assert b'href="/expenses/add"' in data
     assert b"css/profile.css" in data
-
-
-def test_build_profile_summary_seed_data():
-    from app import PROFILE_EXPENSES
-
-    summary = build_profile_summary(PROFILE_EXPENSES)
-    assert summary["total_spent"] == pytest.approx(300.44)
-    assert summary["transaction_count"] == 8
-    assert summary["top_category"] == "Bills"
-    totals = [item["total"] for item in summary["categories"]]
-    assert totals == sorted(totals, reverse=True)
-    assert len(summary["categories"]) == 7
-    food = next(c for c in summary["categories"] if c["category"] == "Food")
-    assert food["total"] == pytest.approx(45.25)
-
-
-def test_build_profile_summary_empty():
-    summary = build_profile_summary([])
-    assert summary == {
-        "total_spent": 0,
-        "transaction_count": 0,
-        "top_category": None,
-        "categories": [],
-    }
 
 
 def test_date_fmt_filter():

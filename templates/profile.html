@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block content %}
+{% set filtered = start_date or end_date %}
 <section class="profile">
     <div class="profile-inner">
 
@@ -22,6 +23,34 @@
                 Add expense
             </a>
         </header>
+
+        <section class="profile-card profile-filter" aria-label="Filter by date">
+            <form class="profile-filter-form" method="get" action="{{ url_for('profile') }}">
+                <div class="profile-filter-field">
+                    <label for="start_date">From</label>
+                    <input type="date" id="start_date" name="start_date" class="form-input" value="{{ start_date or '' }}">
+                </div>
+                <div class="profile-filter-field">
+                    <label for="end_date">To</label>
+                    <input type="date" id="end_date" name="end_date" class="form-input" value="{{ end_date or '' }}">
+                </div>
+                <div class="profile-filter-actions">
+                    <button type="submit" class="btn-primary">Apply</button>
+                    {% if filtered %}
+                    <a href="{{ url_for('profile') }}" class="btn-ghost">Clear</a>
+                    {% endif %}
+                </div>
+            </form>
+            <nav class="profile-presets" aria-label="Date presets">
+                {% for preset in presets %}
+                {% set is_active = preset.start_date == start_date and preset.end_date == end_date %}
+                <a href="{{ url_for('profile', start_date=preset.start_date, end_date=preset.end_date) }}" class="profile-preset{% if is_active %} profile-preset--active{% endif %}"{% if is_active %} aria-current="true"{% endif %}>{{ preset.label }}</a>
+                {% endfor %}
+            </nav>
+            {% if filter_error %}
+            <p class="profile-filter-error" role="alert">{{ filter_error }}</p>
+            {% endif %}
+        </section>
 
         <div class="profile-top">
             <article class="profile-card profile-user" aria-label="Account details">
@@ -42,7 +71,17 @@
                     </svg>
                     <span class="profile-stat-label">Total spent</span>
                     <strong class="profile-stat-value profile-num">₹{{ '%.2f'|format(summary.total_spent) }}</strong>
-                    <span class="profile-stat-sub">Across all categories</span>
+                    <span class="profile-stat-sub">
+                        {% if start_date and end_date %}
+                        {{ start_date|date_fmt }} – {{ end_date|date_fmt }}
+                        {% elif start_date %}
+                        From {{ start_date|date_fmt }}
+                        {% elif end_date %}
+                        Until {{ end_date|date_fmt }}
+                        {% else %}
+                        Across all categories
+                        {% endif %}
+                    </span>
                 </div>
 
                 <div class="profile-card profile-stat">
@@ -100,6 +139,8 @@
                         </tbody>
                     </table>
                 </div>
+                {% elif filtered %}
+                <p class="profile-empty">No expenses in this date range.</p>
                 {% else %}
                 <p class="profile-empty">No expenses yet. <a href="{{ url_for('add_expense') }}">Add your first one</a>.</p>
                 {% endif %}
@@ -122,6 +163,8 @@
                     </li>
                     {% endfor %}
                 </ul>
+                {% elif filtered %}
+                <p class="profile-empty">No expenses in this date range.</p>
                 {% else %}
                 <p class="profile-empty">Nothing to break down yet.</p>
                 {% endif %}

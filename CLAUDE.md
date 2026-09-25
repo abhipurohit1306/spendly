@@ -67,7 +67,7 @@ GET /	Implemented — renders landing.html
 GET/POST /register	Implemented — creates user, sets session["user_id"] and session["user_name"]
 GET/POST /login	Implemented — verifies password, sets session["user_id"] and session["user_name"]
 GET /logout	Implemented — clears session, redirects to /
-GET /profile	Implemented — Step 4: renders profile.html with hardcoded data (DB wiring in Step 5)
+GET /profile	Implemented — live data (Step 5) + date range filter via ?start_date=&end_date= (Step 6)
 GET /expenses/add	Stub — Step 7
 GET /expenses/<id>/edit	Stub — Step 8
 GET /expenses/<id>/delete	Stub — Step 9

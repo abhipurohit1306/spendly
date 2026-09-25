@@ -1,4 +1,5 @@
-from datetime import datetime
+import calendar
+from datetime import date, datetime, timedelta
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
@@ -36,6 +37,71 @@ def initials(name):
         return "?"
     first, last = parts[0][0], parts[-1][0] if len(parts) > 1 else ""
     return (first + last).upper()
+
+
+# ------------------------------------------------------------------ #
+# Date filter helpers                                                 #
+# ------------------------------------------------------------------ #
+
+def parse_date_range(args):
+    """Return (start_date, end_date, error) from query args.
+
+    Dates come back as 'YYYY-MM-DD' strings or None. An invalid or
+    reversed range returns (None, None, message) so the page renders
+    unfiltered."""
+    raw_start = (args.get("start_date") or "").strip()
+    raw_end = (args.get("end_date") or "").strip()
+    try:
+        start = datetime.strptime(raw_start, "%Y-%m-%d").date() if raw_start else None
+        end = datetime.strptime(raw_end, "%Y-%m-%d").date() if raw_end else None
+    except ValueError:
+        return None, None, "Please enter valid dates."
+
+    if start and end and start > end:
+        return None, None, "Start date must be on or before end date."
+
+    return (
+        start.isoformat() if start else None,
+        end.isoformat() if end else None,
+        None,
+    )
+
+
+def months_ago(today, months):
+    """Return the same day `months` calendar months before `today`,
+    clamped to the last day of a shorter month (31 May - 3 -> 28 Feb)."""
+    month_index = today.year * 12 + today.month - 1 - months
+    year, month = divmod(month_index, 12)
+    month += 1
+    day = min(today.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def date_presets(today):
+    """Return the quick-filter ranges shown above the profile stats."""
+    return [
+        {
+            "label": "This month",
+            "start_date": today.replace(day=1).isoformat(),
+            "end_date": today.isoformat(),
+        },
+        {
+            "label": "Last 30 days",
+            "start_date": (today - timedelta(days=29)).isoformat(),
+            "end_date": today.isoformat(),
+        },
+        {
+            "label": "Last 3 months",
+            "start_date": months_ago(today, 3).isoformat(),
+            "end_date": today.isoformat(),
+        },
+        {
+            "label": "Last 6 months",
+            "start_date": months_ago(today, 6).isoformat(),
+            "end_date": today.isoformat(),
+        },
+        {"label": "All time", "start_date": None, "end_date": None},
+    ]
 
 
 # ------------------------------------------------------------------ #
@@ -130,16 +196,19 @@ def profile():
         session.clear()
         return redirect(url_for("login"))
 
+    start_date, end_date, filter_error = parse_date_range(request.args)
+    date_range = {"start_date": start_date, "end_date": end_date}
+
     # --- Transaction history ---
-    expenses = get_recent_transactions(user_id)
+    expenses = get_recent_transactions(user_id, **date_range)
     # --- end transaction history ---
 
     # --- Summary stats ---
-    summary = get_summary_stats(user_id)
+    summary = get_summary_stats(user_id, **date_range)
     # --- end summary stats ---
 
     # --- Category breakdown ---
-    categories = get_category_breakdown(user_id)
+    categories = get_category_breakdown(user_id, **date_range)
     # --- end category breakdown ---
 
     return render_template(
@@ -148,6 +217,10 @@ def profile():
         expenses=expenses,
         summary=summary,
         categories=categories,
+        start_date=start_date,
+        end_date=end_date,
+        filter_error=filter_error,
+        presets=date_presets(date.today()),
     )
 
 

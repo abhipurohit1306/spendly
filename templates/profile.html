@@ -125,6 +125,7 @@
                                 <th scope="col">Description</th>
                                 <th scope="col">Category</th>
                                 <th scope="col" class="profile-num">Amount</th>
+                                <th scope="col" class="profile-actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -134,6 +135,10 @@
                                 <td>{{ expense.description }}</td>
                                 <td><span class="profile-badge profile-badge--{{ expense.category|lower }}">{{ expense.category }}</span></td>
                                 <td class="profile-num">₹{{ '%.2f'|format(expense.amount) }}</td>
+                                <td class="profile-actions">
+                                    <a href="{{ url_for('edit_expense', id=expense.id) }}" class="profile-edit"
+                                       aria-label="Edit expense from {{ expense.date|date_fmt }}">Edit</a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

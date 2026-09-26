@@ -157,3 +157,48 @@ def insert_expense(user_id, amount, category, date, description=None):
         return cursor.lastrowid
     finally:
         conn.close()
+
+
+def get_expense_by_id(expense_id, user_id):
+    """Return the user's expense as a dict with id, amount, category, date
+    and description, or None if it doesn't exist or belongs to someone
+    else."""
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT id, amount, category, date, description FROM expenses "
+            "WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return None
+
+    return {
+        "id": row["id"],
+        "amount": row["amount"],
+        "category": row["category"],
+        "date": row["date"],
+        "description": row["description"],
+    }
+
+
+def update_expense(expense_id, user_id, amount, category, date,
+                   description=None):
+    """Update one of the user's expenses and return True if a row changed.
+
+    Expects already-validated values; a None description is stored
+    as NULL. user_id and created_at are never modified."""
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            "UPDATE expenses "
+            "SET amount = ?, category = ?, date = ?, description = ? "
+            "WHERE id = ? AND user_id = ?",
+            (amount, category, date, description, expense_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount == 1
+    finally:
+        conn.close()

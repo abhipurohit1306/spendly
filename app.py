@@ -1,4 +1,5 @@
 import calendar
+import math
 from datetime import date, datetime, timedelta
 
 from flask import Flask, redirect, render_template, request, session, url_for
@@ -10,6 +11,7 @@ from database.queries import (
     get_recent_transactions,
     get_summary_stats,
     get_user_by_id,
+    insert_expense,
 )
 
 app = Flask(__name__)
@@ -102,6 +104,66 @@ def date_presets(today):
         },
         {"label": "All time", "start_date": None, "end_date": None},
     ]
+
+
+# ------------------------------------------------------------------ #
+# Expense form helpers                                                #
+# ------------------------------------------------------------------ #
+
+# Title case matters: profile.html builds badge classes from category|lower.
+EXPENSE_CATEGORIES = (
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+)
+AMOUNT_MAX = 10_000_000
+DESCRIPTION_MAX_LEN = 200
+
+
+def parse_expense_form(form):
+    """Return (expense, error) from submitted add-expense form data.
+
+    On success `expense` is a dict ready for insert_expense() and error
+    is None. On failure it is (None, message) for the first bad field,
+    checked in order: amount, category, date, description."""
+    raw_amount = (form.get("amount") or "").strip()
+    if not raw_amount:
+        return None, "Please enter an amount."
+    try:
+        amount = float(raw_amount)
+    except ValueError:
+        amount = None
+    if amount is None or not math.isfinite(amount) or amount <= 0:
+        return None, "Amount must be a number greater than 0."
+    if amount > AMOUNT_MAX:
+        return None, f"Amount must be ₹{AMOUNT_MAX:,} or less."
+
+    category = (form.get("category") or "").strip()
+    if category not in EXPENSE_CATEGORIES:
+        return None, "Please choose a valid category."
+
+    raw_date = (form.get("date") or "").strip()
+    try:
+        expense_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
+    except ValueError:
+        return None, "Please enter a valid date."
+
+    description = (form.get("description") or "").strip() or None
+    if description and len(description) > DESCRIPTION_MAX_LEN:
+        return None, (
+            f"Description must be {DESCRIPTION_MAX_LEN} characters or fewer."
+        )
+
+    return {
+        "amount": round(amount, 2),
+        "category": category,
+        "date": expense_date.isoformat(),
+        "description": description,
+    }, None
 
 
 # ------------------------------------------------------------------ #
@@ -224,6 +286,37 @@ def profile():
     )
 
 
+@app.route("/expenses/add", methods=["GET", "POST"])
+def add_expense():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    # A stale session for a deleted user would fail the expenses FK.
+    if get_user_by_id(user_id) is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template(
+            "add_expense.html",
+            categories=EXPENSE_CATEGORIES,
+            form={"date": date.today().isoformat()},
+        )
+
+    expense, error = parse_expense_form(request.form)
+    if error:
+        return render_template(
+            "add_expense.html",
+            categories=EXPENSE_CATEGORIES,
+            form=request.form,
+            error=error,
+        )
+
+    insert_expense(user_id, **expense)
+    return redirect(url_for("profile"))
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -237,11 +330,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/expenses/add")
-def add_expense():
-    return "Add expense — coming in Step 7"
-
 
 @app.route("/expenses/<int:id>/edit")
 def edit_expense(id):

@@ -2,16 +2,18 @@ import calendar
 import math
 from datetime import date, datetime, timedelta
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, abort, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database.db import create_user, get_user_by_email, init_db, seed_db
 from database.queries import (
     get_category_breakdown,
+    get_expense_by_id,
     get_recent_transactions,
     get_summary_stats,
     get_user_by_id,
     insert_expense,
+    update_expense,
 )
 
 app = Flask(__name__)
@@ -125,9 +127,10 @@ DESCRIPTION_MAX_LEN = 200
 
 
 def parse_expense_form(form):
-    """Return (expense, error) from submitted add-expense form data.
+    """Return (expense, error) from submitted add/edit expense form data.
 
-    On success `expense` is a dict ready for insert_expense() and error
+    On success `expense` is a dict ready for insert_expense() or
+    update_expense() and error
     is None. On failure it is (None, message) for the first bad field,
     checked in order: amount, category, date, description."""
     raw_amount = (form.get("amount") or "").strip()
@@ -317,6 +320,50 @@ def add_expense():
     return redirect(url_for("profile"))
 
 
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
+def edit_expense(id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    if get_user_by_id(user_id) is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    # Missing and foreign expenses both 404 so ids aren't disclosed.
+    expense = get_expense_by_id(id, user_id)
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        return render_template(
+            "edit_expense.html",
+            categories=EXPENSE_CATEGORIES,
+            form={
+                "amount": f"{expense['amount']:.2f}",
+                "category": expense["category"],
+                "date": expense["date"],
+                "description": expense["description"] or "",
+            },
+            expense_id=id,
+        )
+
+    updated, error = parse_expense_form(request.form)
+    if error:
+        return render_template(
+            "edit_expense.html",
+            categories=EXPENSE_CATEGORIES,
+            form=request.form,
+            expense_id=id,
+            error=error,
+        )
+
+    # The row may have vanished between the lookup and the update.
+    if not update_expense(id, user_id, **updated):
+        abort(404)
+    return redirect(url_for("profile"))
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -330,11 +377,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/expenses/<int:id>/edit")
-def edit_expense(id):
-    return "Edit expense — coming in Step 8"
-
 
 @app.route("/expenses/<int:id>/delete")
 def delete_expense(id):

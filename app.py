@@ -392,6 +392,13 @@ def delete_expense(id):
     return redirect(url_for("profile"))
 
 
+@app.route("/analytics")
+def analytics():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")

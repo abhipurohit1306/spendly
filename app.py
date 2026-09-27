@@ -7,6 +7,7 @@ from werkzeug.security import check_password_hash
 
 from database.db import create_user, get_user_by_email, init_db, seed_db
 from database.queries import (
+    delete_expense as delete_expense_row,
     get_category_breakdown,
     get_expense_by_id,
     get_recent_transactions,
@@ -364,6 +365,30 @@ def edit_expense(id):
     return redirect(url_for("profile"))
 
 
+@app.route("/expenses/<int:id>/delete", methods=["GET", "POST"])
+def delete_expense(id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    if get_user_by_id(user_id) is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    # GET only confirms; the row is removed on POST.
+    if request.method == "GET":
+        # Missing and foreign expenses both 404 so ids aren't disclosed.
+        expense = get_expense_by_id(id, user_id)
+        if expense is None:
+            abort(404)
+        return render_template("delete_expense.html", expense=expense)
+
+    # The DELETE filters on user_id, so a foreign or missing id removes nothing.
+    if not delete_expense_row(id, user_id):
+        abort(404)
+    return redirect(url_for("profile"))
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -372,15 +397,6 @@ def terms():
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
-
-
-# ------------------------------------------------------------------ #
-# Placeholder routes — students will implement these                  #
-# ------------------------------------------------------------------ #
-
-@app.route("/expenses/<int:id>/delete")
-def delete_expense(id):
-    return "Delete expense — coming in Step 9"
 
 
 if __name__ == "__main__":

@@ -63,6 +63,9 @@
                     <button type="submit" class="btn-submit expense-submit">Save Changes</button>
                 </div>
             </form>
+            <p class="expense-delete">
+                <a href="{{ url_for('delete_expense', id=expense_id) }}" class="expense-delete-link">Delete this expense</a>
+            </p>
         </div>
 
     </div>

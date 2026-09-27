@@ -6,12 +6,17 @@ All SQL for the app lives here — routes must call these functions rather
 than touching sqlite3 directly.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 
 from werkzeug.security import generate_password_hash
 
-DB_PATH = Path(__file__).resolve().parent.parent / "expense_tracker.db"
+# DB_PATH env var lets production point at a mounted volume.
+DB_PATH = Path(
+    os.environ.get("DB_PATH")
+    or Path(__file__).resolve().parent.parent / "expense_tracker.db"
+)
 
 
 def get_db():

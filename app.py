@@ -1,5 +1,6 @@
 import calendar
 import math
+import os
 from datetime import date, datetime, timedelta
 
 from flask import Flask, abort, redirect, render_template, request, session, url_for
@@ -18,7 +19,9 @@ from database.queries import (
 )
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-key-change-in-production"
+app.secret_key = os.environ.get(
+    "SECRET_KEY", "dev-secret-key-change-in-production"
+)
 
 
 # ------------------------------------------------------------------ #

@@ -255,6 +255,26 @@
     outline-offset: 2px;
 }
 
+.profile-delete {
+    color: var(--danger);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.profile-edit + .profile-delete {
+    margin-left: 0.75rem;
+}
+
+.profile-delete:hover {
+    text-decoration: underline;
+}
+
+.profile-delete:focus-visible {
+    outline: 2px solid var(--danger);
+    outline-offset: 2px;
+}
+
 /* ------------------------------------------------------------------ */
 /* Category badges and bars                                            */
 /* ------------------------------------------------------------------ */

@@ -43,3 +43,27 @@
     width: auto;
     margin-top: 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* Edit expense page                                                   */
+/* ------------------------------------------------------------------ */
+
+.expense-delete {
+    margin: 1.25rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-soft);
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.expense-delete-link { color: var(--ink-muted); }
+
+.expense-delete-link:hover {
+    color: var(--danger);
+    text-decoration: underline;
+}
+
+.expense-delete-link:focus-visible {
+    outline: 2px solid var(--danger);
+    outline-offset: 2px;
+}

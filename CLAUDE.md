@@ -70,7 +70,7 @@ GET /logout	Implemented — clears session, redirects to /
 GET /profile	Implemented — live data (Step 5) + date range filter via ?start_date=&end_date= (Step 6)
 GET/POST /expenses/add	Implemented — validated form (add_expense.html), insert_expense, redirects to /profile (Step 7)
 GET/POST /expenses/<id>/edit	Implemented — owner-only edit form (edit_expense.html), update_expense, redirects to /profile (Step 8)
-GET /expenses/<id>/delete	Stub — Step 9
+GET/POST /expenses/<id>/delete	Implemented — owner-only confirmation page (delete_expense.html) on GET, delete_expense on POST, redirects to /profile (Step 9)
 Do not implement a stub route unless the active task explicitly targets that step.
 
 Warnings and things to avoid
